@@ -1,0 +1,1732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Neurodivergent nervous system monitoring and regulation tool">
+    <meta name="theme-color" content="#1a1a2e">
+    
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <title>Nervous System Mixer</title>
+    
+    <style>
+        /* ==================== RESET & BASE ==================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Color Palette */
+            --bg-dark: #1a1a2e;
+            --bg-medium: #16213e;
+            --bg-light: #0f3460;
+            --accent-primary: #00d4ff;
+            --accent-secondary: #e94560;
+            --text-primary: #ffffff;
+            --text-secondary: #b0b0b0;
+            --text-muted: #707070;
+            
+            /* Channel Colors */
+            --vocals-color: #e94560;
+            --guitar-color: #ffaa00;
+            --keys-color: #00d4ff;
+            --drums-color: #9d4edd;
+            --bass-color: #06ffa5;
+            
+            /* Status Colors */
+            --green: #06ffa5;
+            --yellow: #ffaa00;
+            --orange: #ff6b35;
+            --red: #e94560;
+            
+            /* Spacing */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            
+            /* Typography */
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-mono: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", Consolas, "Courier New", monospace;
+        }
+        
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden;
+            padding-bottom: 80px;
+            transition: opacity 0.3s ease;
+        }
+        
+        body.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+        
+        /* ==================== LAYOUT ==================== */
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: var(--space-md);
+        }
+        
+        .header {
+            background: var(--bg-medium);
+            padding: var(--space-lg);
+            border-bottom: 2px solid var(--accent-primary);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .header .subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-top: var(--space-xs);
+        }
+        
+        /* ==================== QUICK PRESETS ==================== */
+        .quick-presets {
+            display: flex;
+            gap: var(--space-sm);
+            margin: var(--space-lg) 0;
+            flex-wrap: wrap;
+        }
+        
+        .preset-btn {
+            flex: 1;
+            min-width: 120px;
+            padding: var(--space-md);
+            background: var(--bg-light);
+            border: 2px solid var(--accent-primary);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+        
+        .preset-btn:hover {
+            background: var(--accent-primary);
+            color: var(--bg-dark);
+            transform: translateY(-2px);
+        }
+        
+        .preset-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* ==================== MASTER METER ==================== */
+        .master-section {
+            background: var(--bg-medium);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            margin: var(--space-lg) 0;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .master-label {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .master-level-display {
+            font-size: 3rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+            text-align: center;
+            margin: var(--space-md) 0;
+            color: var(--green);
+            transition: color 0.3s ease;
+        }
+        
+        .master-level-display.caution { color: var(--yellow); }
+        .master-level-display.warning { color: var(--orange); }
+        .master-level-display.danger { color: var(--red); }
+        
+        .master-meter {
+            height: 40px;
+            background: var(--bg-dark);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+        
+        .master-meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green), var(--yellow), var(--orange), var(--red));
+            transition: width 0.3s ease;
+            position: relative;
+            border-radius: 20px;
+        }
+        
+        .master-meter-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.2), transparent);
+            border-radius: 20px;
+        }
+        
+        .status-label {
+            text-align: center;
+            font-size: 0.875rem;
+            margin-top: var(--space-sm);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* ==================== CHANNEL STRIPS ==================== */
+        .channels-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-lg);
+            margin: var(--space-lg) 0;
+        }
+        
+        .channel {
+            background: var(--bg-medium);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .channel:active {
+            transform: scale(0.98);
+        }
+        
+        .channel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--space-md);
+            padding-bottom: var(--space-sm);
+            border-bottom: 2px solid var(--bg-light);
+        }
+        
+        .channel-name {
+            font-size: 1.125rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .channel-icon {
+            font-size: 1.5rem;
+        }
+        
+        .channel.vocals { border-left: 4px solid var(--vocals-color); }
+        .channel.guitar { border-left: 4px solid var(--guitar-color); }
+        .channel.keys { border-left: 4px solid var(--keys-color); }
+        .channel.drums { border-left: 4px solid var(--drums-color); }
+        .channel.bass { border-left: 4px solid var(--bass-color); }
+        
+        .channel.vocals .channel-name { color: var(--vocals-color); }
+        .channel.guitar .channel-name { color: var(--guitar-color); }
+        .channel.keys .channel-name { color: var(--keys-color); }
+        .channel.drums .channel-name { color: var(--drums-color); }
+        .channel.bass .channel-name { color: var(--bass-color); }
+        
+        /* ==================== FADERS ==================== */
+        .fader-container {
+            margin: var(--space-md) 0;
+        }
+        
+        .fader-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .fader-value {
+            font-family: var(--font-mono);
+            font-weight: 700;
+        }
+        
+        .fader {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: var(--bg-dark);
+            outline: none;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6);
+        }
+        
+        .fader::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            transition: transform 0.1s ease;
+        }
+        
+        .fader::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+        
+        .fader::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+        
+        .fader:focus {
+            outline: 2px solid var(--accent-primary);
+            outline-offset: 4px;
+        }
+        
+        /* ==================== METER ==================== */
+        .channel-meter {
+            height: 60px;
+            background: var(--bg-dark);
+            border-radius: 8px;
+            padding: var(--space-xs);
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+        }
+        
+        .meter-bar {
+            flex: 1;
+            background: var(--bg-light);
+            border-radius: 2px;
+            transition: height 0.1s ease;
+            position: relative;
+        }
+        
+        .meter-bar.active {
+            background: var(--green);
+        }
+        
+        .meter-bar.caution {
+            background: var(--yellow);
+        }
+        
+        .meter-bar.warning {
+            background: var(--orange);
+        }
+        
+        .meter-bar.danger {
+            background: var(--red);
+        }
+        
+        /* ==================== BUTTONS ==================== */
+        .channel-controls {
+            display: flex;
+            gap: var(--space-sm);
+            margin-top: var(--space-md);
+        }
+        
+        .btn {
+            flex: 1;
+            padding: var(--space-sm) var(--space-md);
+            border: none;
+            border-radius: 8px;
+            font-family: var(--font-sans);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-mute {
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+        }
+        
+        .btn-mute.active {
+            background: var(--red);
+            color: var(--text-primary);
+        }
+        
+        .btn-solo {
+            background: var(--bg-dark);
+            color: var(--text-secondary);
+        }
+        
+        .btn-solo.active {
+            background: var(--yellow);
+            color: var(--bg-dark);
+        }
+        
+        /* ==================== INTERVENTIONS ==================== */
+        .interventions {
+            background: var(--bg-medium);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            margin: var(--space-lg) 0;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .interventions h3 {
+            color: var(--accent-secondary);
+            margin-bottom: var(--space-md);
+            font-size: 1.125rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .intervention-item {
+            background: var(--bg-light);
+            padding: var(--space-md);
+            border-radius: 8px;
+            margin-bottom: var(--space-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+        
+        .intervention-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .intervention-text {
+            flex: 1;
+            font-size: 0.875rem;
+        }
+        
+        /* ==================== BOTTOM NAV ==================== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-medium);
+            border-top: 2px solid var(--accent-primary);
+            display: flex;
+            justify-content: space-around;
+            padding: var(--space-sm) 0;
+            box-shadow: 0 -4px 6px rgba(0, 0, 0, 0.3);
+            z-index: 100;
+        }
+        
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-sm);
+            cursor: pointer;
+            font-size: 0.75rem;
+            transition: color 0.2s ease;
+            flex: 1;
+        }
+        
+        .nav-btn.active {
+            color: var(--accent-primary);
+        }
+        
+        .nav-icon {
+            font-size: 1.5rem;
+        }
+        
+        /* ==================== TABS ==================== */
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* ==================== HISTORY ==================== */
+        .history-list {
+            list-style: none;
+        }
+        
+        .history-item {
+            background: var(--bg-medium);
+            border-radius: 8px;
+            padding: var(--space-md);
+            margin-bottom: var(--space-sm);
+            border-left: 4px solid var(--accent-primary);
+        }
+        
+        .history-date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .history-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+        
+        .history-stat {
+            text-align: center;
+        }
+        
+        .history-stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+        
+        .history-stat-value.danger { color: var(--red); }
+        .history-stat-value.warning { color: var(--orange); }
+        .history-stat-value.caution { color: var(--yellow); }
+        
+        .history-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+        
+        .history-trigger {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: var(--space-sm);
+            font-style: italic;
+        }
+        
+        /* ==================== SETTINGS ==================== */
+        .settings-section {
+            background: var(--bg-medium);
+            border-radius: 12px;
+            padding: var(--space-lg);
+            margin-bottom: var(--space-lg);
+        }
+        
+        .settings-section h3 {
+            color: var(--accent-primary);
+            margin-bottom: var(--space-md);
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--space-md) 0;
+            border-bottom: 1px solid var(--bg-light);
+        }
+        
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-label {
+            font-size: 0.875rem;
+        }
+        
+        .setting-description {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: var(--space-xs);
+        }
+        
+        .toggle {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: var(--bg-dark);
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .toggle.active {
+            background: var(--accent-primary);
+        }
+        
+        .toggle-thumb {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        
+        .toggle.active .toggle-thumb {
+            transform: translateX(24px);
+        }
+        
+        /* ==================== EMERGENCY BUTTON ==================== */
+        .emergency-btn {
+            background: var(--red);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: var(--space-lg);
+            width: 100%;
+            font-size: 1.125rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin: var(--space-lg) 0;
+            box-shadow: 0 4px 8px rgba(233, 69, 96, 0.4);
+            transition: all 0.2s ease;
+        }
+        
+        .emergency-btn:active {
+            transform: scale(0.98);
+            box-shadow: 0 2px 4px rgba(233, 69, 96, 0.4);
+        }
+        
+        /* ==================== MODAL ==================== */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 200;
+            padding: var(--space-lg);
+            overflow-y: auto;
+        }
+        
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: var(--bg-medium);
+            border-radius: 12px;
+            padding: var(--space-xl);
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--space-lg);
+        }
+        
+        .modal-title {
+            font-size: 1.5rem;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 2rem;
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-body {
+            color: var(--text-primary);
+            line-height: 1.8;
+        }
+        
+        .modal-body h4 {
+            color: var(--accent-secondary);
+            margin: var(--space-lg) 0 var(--space-sm) 0;
+            font-size: 1rem;
+            text-transform: uppercase;
+        }
+        
+        .modal-body ul {
+            margin-left: var(--space-lg);
+            margin-bottom: var(--space-md);
+        }
+        
+        .modal-body li {
+            margin-bottom: var(--space-sm);
+        }
+        
+        /* ==================== RESPONSIVE ==================== */
+        @media (max-width: 640px) {
+            .channels-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 1.25rem;
+            }
+            
+            .master-level-display {
+                font-size: 2.5rem;
+            }
+            
+            .container {
+                padding: var(--space-sm);
+            }
+            
+            .quick-presets {
+                flex-direction: column;
+            }
+            
+            .preset-btn {
+                min-width: 100%;
+            }
+        }
+        
+        /* ==================== UTILITIES ==================== */
+        .hidden {
+            display: none !important;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <h1>🎚️ Nervous System Mixer</h1>
+        <p class="subtitle">Real-time nervous system monitoring & regulation</p>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <div class="container">
+        <!-- TAB: MIXER -->
+        <div id="tab-mixer" class="tab-content active">
+            <!-- QUICK PRESETS -->
+            <div class="quick-presets">
+                <button class="preset-btn" data-preset="overstimulated">🧘‍♀️ Overstimulated</button>
+                <button class="preset-btn" data-preset="executive-dysfunction">🔄 Stuck</button>
+                <button class="preset-btn" data-preset="social-drain">🚪 Social Drain</button>
+            </div>
+            
+            <!-- MASTER SECTION -->
+            <section class="master-section">
+                <div class="master-label">Master Bus Level</div>
+                <div id="master-level-display" class="master-level-display">0%</div>
+                <div class="master-meter">
+                    <div id="master-meter-fill" class="master-meter-fill" style="width: 0%"></div>
+                </div>
+                <div id="status-label" class="status-label">OPTIMAL</div>
+            </section>
+
+            <!-- INTERVENTIONS -->
+            <section id="interventions-section" class="interventions hidden">
+                <h3>⚠️ Recommended Actions</h3>
+                <div id="interventions-list"></div>
+            </section>
+
+            <!-- EMERGENCY BUTTON -->
+            <button id="emergency-btn" class="emergency-btn hidden">
+                🚨 EMERGENCY SHUTDOWN PROTOCOL
+            </button>
+
+            <!-- CHANNELS -->
+            <div class="channels-grid">
+                <!-- VOCALS -->
+                <div class="channel vocals">
+                    <div class="channel-header">
+                        <span class="channel-name">🎤 Vocals</span>
+                        <span class="channel-icon">🎤</span>
+                    </div>
+                    <div class="fader-container">
+                        <div class="fader-label">
+                            <span>Emotional Regulation</span>
+                            <span class="fader-value" id="vocals-value">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="fader" id="vocals-fader" 
+                               aria-label="Vocals channel - Emotional regulation level"
+                               aria-valuetext="0 percent">
+                    </div>
+                    <div class="channel-meter" id="vocals-meter" aria-hidden="true"></div>
+                    <div class="channel-controls">
+                        <button class="btn btn-mute" data-channel="vocals" data-action="mute">Mute</button>
+                        <button class="btn btn-solo" data-channel="vocals" data-action="solo">Solo</button>
+                    </div>
+                </div>
+
+                <!-- GUITAR -->
+                <div class="channel guitar">
+                    <div class="channel-header">
+                        <span class="channel-name">🎸 Guitar</span>
+                        <span class="channel-icon">🎸</span>
+                    </div>
+                    <div class="fader-container">
+                        <div class="fader-label">
+                            <span>Social Processing</span>
+                            <span class="fader-value" id="guitar-value">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="fader" id="guitar-fader"
+                               aria-label="Guitar channel - Social processing load"
+                               aria-valuetext="0 percent">
+                    </div>
+                    <div class="channel-meter" id="guitar-meter" aria-hidden="true"></div>
+                    <div class="channel-controls">
+                        <button class="btn btn-mute" data-channel="guitar" data-action="mute">Mute</button>
+                        <button class="btn btn-solo" data-channel="guitar" data-action="solo">Solo</button>
+                    </div>
+                </div>
+
+                <!-- KEYBOARDS -->
+                <div class="channel keys">
+                    <div class="channel-header">
+                        <span class="channel-name">🎹 Keys</span>
+                        <span class="channel-icon">🎹</span>
+                    </div>
+                    <div class="fader-container">
+                        <div class="fader-label">
+                            <span>Executive Function</span>
+                            <span class="fader-value" id="keys-value">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="fader" id="keys-fader"
+                               aria-label="Keys channel - Executive function load"
+                               aria-valuetext="0 percent">
+                    </div>
+                    <div class="channel-meter" id="keys-meter" aria-hidden="true"></div>
+                    <div class="channel-controls">
+                        <button class="btn btn-mute" data-channel="keys" data-action="mute">Mute</button>
+                        <button class="btn btn-solo" data-channel="keys" data-action="solo">Solo</button>
+                    </div>
+                </div>
+
+                <!-- DRUMS -->
+                <div class="channel drums">
+                    <div class="channel-header">
+                        <span class="channel-name">🥁 Drums</span>
+                        <span class="channel-icon">🥁</span>
+                    </div>
+                    <div class="fader-container">
+                        <div class="fader-label">
+                            <span>Sensory Processing</span>
+                            <span class="fader-value" id="drums-value">0%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="0" class="fader" id="drums-fader"
+                               aria-label="Drums channel - Sensory input level"
+                               aria-valuetext="0 percent">
+                    </div>
+                    <div class="channel-meter" id="drums-meter" aria-hidden="true"></div>
+                    <div class="channel-controls">
+                        <button class="btn btn-mute" data-channel="drums" data-action="mute">Mute</button>
+                        <button class="btn btn-solo" data-channel="drums" data-action="solo">Solo</button>
+                    </div>
+                </div>
+
+                <!-- BASS -->
+                <div class="channel bass">
+                    <div class="channel-header">
+                        <span class="channel-name">🔋 Bass</span>
+                        <span class="channel-icon">🔋</span>
+                    </div>
+                    <div class="fader-container">
+                        <div class="fader-label">
+                            <span>Physical Energy</span>
+                            <span class="fader-value" id="bass-value">100%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="100" class="fader" id="bass-fader"
+                               aria-label="Bass channel - Physical energy level"
+                               aria-valuetext="100 percent">
+                    </div>
+                    <div class="channel-meter" id="bass-meter" aria-hidden="true"></div>
+                    <div class="channel-controls">
+                        <button class="btn btn-mute" data-channel="bass" data-action="mute">Mute</button>
+                        <button class="btn btn-solo" data-channel="bass" data-action="solo">Solo</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: HISTORY -->
+        <div id="tab-history" class="tab-content">
+            <section class="master-section">
+                <h2>📊 History & Patterns</h2>
+                <ul id="history-list" class="history-list"></ul>
+                <p id="history-empty" class="text-center" style="color: var(--text-muted); padding: var(--space-xl);">
+                    No history yet. Start adjusting your channels to track patterns.
+                </p>
+            </section>
+        </div>
+
+        <!-- TAB: SETTINGS -->
+        <div id="tab-settings" class="tab-content">
+            <section class="settings-section">
+                <h3>🎛️ System Settings</h3>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Auto-save snapshots</div>
+                        <div class="setting-description">Automatically record state changes</div>
+                    </div>
+                    <div class="toggle active" id="toggle-autosave">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Warning notifications</div>
+                        <div class="setting-description">Show intervention suggestions</div>
+                    </div>
+                    <div class="toggle active" id="toggle-warnings">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Haptic feedback</div>
+                        <div class="setting-description">Vibration on interactions (mobile)</div>
+                    </div>
+                    <div class="toggle active" id="toggle-haptics">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                </div>
+                
+                <div class="setting-item">
+                    <div>
+                        <div class="setting-label">Manual mode</div>
+                        <div class="setting-description">For alexithymia - disable auto-updates</div>
+                    </div>
+                    <div class="toggle" id="toggle-manual">
+                        <div class="toggle-thumb"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="settings-section">
+                <h3>📱 About</h3>
+                <p style="color: var(--text-secondary); font-size: 0.875rem; line-height: 1.8;">
+                    <strong>Nervous System Mixer v1.1</strong><br>
+                    A neurodivergent-friendly tool for monitoring and regulating your nervous system in real-time.<br><br>
+                    Built with ❤️ for the ND community.
+                </p>
+            </section>
+
+            <section class="settings-section">
+                <h3>💾 Data Management</h3>
+                <button class="btn" style="width: 100%; background: var(--accent-primary); color: var(--bg-dark); margin-bottom: var(--space-sm);" id="export-btn">
+                    Export Data
+                </button>
+                <button class="btn" style="width: 100%; background: var(--red); color: white;" id="reset-btn">
+                    Clear All Data
+                </button>
+            </section>
+        </div>
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-tab="mixer" aria-label="Mixer view">
+            <span class="nav-icon">🎚️</span>
+            <span>Mixer</span>
+        </button>
+        <button class="nav-btn" data-tab="history" aria-label="History view">
+            <span class="nav-icon">📊</span>
+            <span>History</span>
+        </button>
+        <button class="nav-btn" data-tab="settings" aria-label="Settings view">
+            <span class="nav-icon">⚙️</span>
+            <span>Settings</span>
+        </button>
+    </nav>
+
+    <!-- EMERGENCY MODAL -->
+    <div id="emergency-modal" class="modal" role="dialog" aria-labelledby="modal-title" aria-modal="true">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modal-title">🚨 Emergency Protocol</h2>
+                <button class="modal-close" id="modal-close" aria-label="Close emergency protocol">×</button>
+            </div>
+            <div class="modal-body">
+                <h4>Immediate Actions:</h4>
+                <ul>
+                    <li><strong>STOP</strong> current activity</li>
+                    <li><strong>MOVE</strong> to safe/quiet space</li>
+                    <li><strong>REDUCE</strong> all inputs:
+                        <ul>
+                            <li>Lights: OFF or very dim</li>
+                            <li>Sound: Silent or white noise</li>
+                            <li>Social: Alone or safe person</li>
+                        </ul>
+                    </li>
+                    <li><strong>NO</strong> explanations required</li>
+                    <li><strong>WAIT</strong> 20-30 minutes minimum</li>
+                </ul>
+
+                <h4>Remember:</h4>
+                <p>This is temporary. Your system is protecting you. You're not broken. Rest will help.</p>
+
+                <h4>If unsafe:</h4>
+                <p>
+                    Crisis Text Line: Text HOME to 741741<br>
+                    Crisis Phone: 988 (Suicide & Crisis)
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE MANAGEMENT ====================
+        const state = {
+            channels: {
+                vocals: { level: 0, muted: false, solo: false },
+                guitar: { level: 0, muted: false, solo: false },
+                keys: { level: 0, muted: false, solo: false },
+                drums: { level: 0, muted: false, solo: false },
+                bass: { level: 100, muted: false, solo: false }
+            },
+            settings: {
+                autosave: true,
+                warnings: true,
+                haptics: true,
+                manual: false
+            },
+            history: [],
+            emergencyHistory: []
+        };
+
+        // ==================== PRESETS ====================
+        const presets = {
+            overstimulated: { 
+                drums: 80, 
+                guitar: 30, 
+                keys: 40, 
+                vocals: 60, 
+                bass: 70,
+                trigger: 'Overstimulated preset activated'
+            },
+            'executive-dysfunction': { 
+                drums: 40, 
+                guitar: 20, 
+                keys: 5, 
+                vocals: 50, 
+                bass: 60,
+                trigger: 'Executive dysfunction preset activated'
+            },
+            'social-drain': { 
+                drums: 50, 
+                guitar: 85, 
+                keys: 60, 
+                vocals: 70, 
+                bass: 40,
+                trigger: 'Social drain preset activated'
+            }
+        };
+
+        // ==================== SAFE STORAGE ====================
+        let saveTimeout;
+        
+        function saveState() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(() => {
+                try {
+                    localStorage.setItem('nervous-system-mixer', JSON.stringify(state));
+                } catch (e) {
+                    console.warn('Could not save state:', e);
+                    // Continue without saving rather than crashing
+                }
+            }, 1000);
+        }
+
+        function loadState() {
+            try {
+                const saved = localStorage.getItem('nervous-system-mixer');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    Object.assign(state, parsed);
+                }
+            } catch (e) {
+                console.warn('Could not load saved state:', e);
+                // Start fresh rather than crashing
+            }
+        }
+
+        function saveSnapshot(trigger = null) {
+            if (!state.settings.autosave) return;
+            
+            const snapshot = {
+                timestamp: Date.now(),
+                masterLevel: calculateMasterLevel(),
+                channels: JSON.parse(JSON.stringify(state.channels)),
+                trigger: trigger
+            };
+            
+            state.history.unshift(snapshot);
+            if (state.history.length > 50) state.history = state.history.slice(0, 50);
+            saveState();
+            renderHistory();
+        }
+
+        function logEmergencyEvent() {
+            const emergencyLog = {
+                timestamp: Date.now(),
+                masterLevel: calculateMasterLevel(),
+                channels: JSON.parse(JSON.stringify(state.channels))
+            };
+            
+            try {
+                const emergencies = JSON.parse(localStorage.getItem('emergency-history') || '[]');
+                emergencies.unshift(emergencyLog);
+                localStorage.setItem('emergency-history', JSON.stringify(emergencies.slice(0, 20)));
+            } catch (e) {
+                console.warn('Could not save emergency log:', e);
+            }
+        }
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            showLoading();
+            loadState();
+            setupEventListeners();
+            setupMeters();
+            updateMasterLevel();
+            renderHistory();
+            updateUI();
+            hideLoading();
+        }
+
+        function showLoading() {
+            document.body.classList.add('loading');
+        }
+
+        function hideLoading() {
+            document.body.classList.remove('loading');
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        function setupEventListeners() {
+            // Faders
+            document.querySelectorAll('.fader').forEach(fader => {
+                const channel = fader.id.replace('-fader', '');
+                fader.addEventListener('input', (e) => {
+                    updateChannel(channel, parseInt(e.target.value));
+                });
+                
+                fader.addEventListener('change', () => {
+                    saveSnapshot();
+                    triggerHaptic();
+                });
+            });
+
+            // Control buttons
+            document.querySelectorAll('.btn-mute, .btn-solo').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const channel = e.target.dataset.channel;
+                    const action = e.target.dataset.action;
+                    handleChannelControl(channel, action, e.target);
+                    triggerHaptic();
+                });
+            });
+
+            // Preset buttons
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const presetName = e.target.dataset.preset;
+                    applyPreset(presetName);
+                    triggerHaptic();
+                });
+            });
+
+            // Bottom navigation
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const tab = e.currentTarget.dataset.tab;
+                    switchTab(tab);
+                    triggerHaptic();
+                });
+            });
+
+            // Emergency button with confirmation
+            document.getElementById('emergency-btn').addEventListener('click', () => {
+                if (confirm('Activate emergency shutdown protocol? This will log the event and show crisis resources.')) {
+                    document.getElementById('emergency-modal').classList.add('active');
+                    logEmergencyEvent();
+                    triggerHaptic('heavy');
+                }
+            });
+
+            // Modal close
+            document.getElementById('modal-close').addEventListener('click', () => {
+                document.getElementById('emergency-modal').classList.remove('active');
+            });
+
+            // Click outside modal to close
+            document.getElementById('emergency-modal').addEventListener('click', (e) => {
+                if (e.target.id === 'emergency-modal') {
+                    document.getElementById('emergency-modal').classList.remove('active');
+                }
+            });
+
+            // Settings toggles
+            document.querySelectorAll('.toggle').forEach(toggle => {
+                toggle.addEventListener('click', (e) => {
+                    const setting = e.currentTarget.id.replace('toggle-', '');
+                    toggleSetting(setting, e.currentTarget);
+                    triggerHaptic();
+                });
+            });
+
+            // Data management
+            document.getElementById('export-btn').addEventListener('click', exportData);
+            document.getElementById('reset-btn').addEventListener('click', resetData);
+
+            // Keyboard navigation
+            document.addEventListener('keydown', handleKeyboard);
+        }
+
+        // ==================== KEYBOARD NAVIGATION ====================
+        function handleKeyboard(e) {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON') return;
+            
+            const keyHandlers = {
+                '1': () => focusChannel('vocals'),
+                '2': () => focusChannel('guitar'),
+                '3': () => focusChannel('keys'),
+                '4': () => focusChannel('drums'),
+                '5': () => focusChannel('bass'),
+                'e': () => {
+                    const btn = document.getElementById('emergency-btn');
+                    if (!btn.classList.contains('hidden')) btn.click();
+                },
+                'Escape': () => {
+                    const modal = document.getElementById('emergency-modal');
+                    if (modal.classList.contains('active')) {
+                        modal.classList.remove('active');
+                    }
+                }
+            };
+            
+            if (keyHandlers[e.key]) {
+                keyHandlers[e.key]();
+                e.preventDefault();
+            }
+        }
+
+        function focusChannel(channel) {
+            const fader = document.getElementById(`${channel}-fader`);
+            if (fader) {
+                fader.focus();
+                fader.select();
+            }
+        }
+
+        // ==================== PRESET APPLICATION ====================
+        function applyPreset(presetName) {
+            const preset = presets[presetName];
+            if (!preset) return;
+            
+            Object.entries(preset).forEach(([channel, value]) => {
+                if (channel === 'trigger') return;
+                if (state.channels[channel]) {
+                    updateChannel(channel, value);
+                    const fader = document.getElementById(`${channel}-fader`);
+                    if (fader) fader.value = value;
+                }
+            });
+            
+            saveSnapshot(preset.trigger);
+            triggerHaptic('medium');
+        }
+
+        // ==================== CHANNEL UPDATES ====================
+        function updateChannel(channel, value) {
+            state.channels[channel].level = value;
+            const valueElement = document.getElementById(`${channel}-value`);
+            if (valueElement) valueElement.textContent = `${value}%`;
+            
+            // Update aria-valuetext for accessibility
+            const fader = document.getElementById(`${channel}-fader`);
+            if (fader) fader.setAttribute('aria-valuetext', `${value} percent`);
+            
+            // Only update master if not in manual mode
+            if (!state.settings.manual) {
+                updateMasterLevel();
+            }
+            
+            updateMeter(channel);
+            saveState();
+        }
+
+        function handleChannelControl(channel, action, button) {
+            if (action === 'mute') {
+                state.channels[channel].muted = !state.channels[channel].muted;
+                button.classList.toggle('active');
+            } else if (action === 'solo') {
+                const wasSolo = state.channels[channel].solo;
+                // Turn off all other solos
+                Object.keys(state.channels).forEach(ch => {
+                    state.channels[ch].solo = false;
+                    const soloBtn = document.querySelector(`[data-channel="${ch}"][data-action="solo"]`);
+                    if (soloBtn) soloBtn.classList.remove('active');
+                });
+                // Toggle this channel's solo
+                state.channels[channel].solo = !wasSolo;
+                button.classList.toggle('active');
+            }
+            
+            updateMasterLevel();
+            saveState();
+        }
+
+        // ==================== MASTER LEVEL CALCULATION (FIXED) ====================
+        function calculateMasterLevel() {
+            let loadTotal = 0;
+            let energyMultiplier = 1;
+            
+            const anySolo = Object.values(state.channels).some(ch => ch.solo);
+            
+            // Calculate BASS energy multiplier first
+            const bassLevel = state.channels.bass.level;
+            // Low bass reduces capacity: at 0% bass, capacity is halved
+            // at 100% bass, full capacity available
+            energyMultiplier = 0.5 + (bassLevel / 200); // Range: 0.5 to 1.0
+            
+            // Calculate load from other channels
+            Object.entries(state.channels).forEach(([name, channel]) => {
+                if (name === 'bass') return; // Skip bass in load calculation
+                if (channel.muted) return; // Skip muted channels
+                if (anySolo && !channel.solo) return; // Skip non-solo when solo active
+                
+                loadTotal += channel.level;
+            });
+            
+            // Average the load channels (4 channels: vocals, guitar, keys, drums)
+            const avgLoad = loadTotal / 4;
+            
+            // Apply energy multiplier
+            // Low energy amplifies perceived load
+            const adjustedLoad = avgLoad / energyMultiplier;
+            
+            return Math.min(100, Math.round(adjustedLoad));
+        }
+
+        function updateMasterLevel() {
+            const level = calculateMasterLevel();
+            const display = document.getElementById('master-level-display');
+            const fill = document.getElementById('master-meter-fill');
+            const statusLabel = document.getElementById('status-label');
+            const emergencyBtn = document.getElementById('emergency-btn');
+            const interventionsSection = document.getElementById('interventions-section');
+            
+            if (!display || !fill || !statusLabel) return;
+            
+            display.textContent = `${level}%`;
+            fill.style.width = `${level}%`;
+            
+            // Remove all status classes
+            display.classList.remove('caution', 'warning', 'danger');
+            
+            // Determine status
+            let status = 'OPTIMAL';
+            let showInterventions = false;
+            
+            if (level >= 95) {
+                display.classList.add('danger');
+                status = '🔴 DANGER - STOP NOW';
+                emergencyBtn.classList.remove('hidden');
+                showInterventions = true;
+            } else if (level >= 80) {
+                display.classList.add('warning');
+                status = '🟠 WARNING - REDUCE LOAD';
+                emergencyBtn.classList.add('hidden');
+                showInterventions = true;
+            } else if (level >= 60) {
+                display.classList.add('caution');
+                status = '🟡 CAUTION - WATCH CLOSELY';
+                emergencyBtn.classList.add('hidden');
+                showInterventions = state.settings.warnings;
+            } else {
+                status = '🟢 OPTIMAL';
+                emergencyBtn.classList.add('hidden');
+            }
+            
+            statusLabel.textContent = status;
+            
+            // Show/hide interventions
+            if (showInterventions && state.settings.warnings) {
+                updateInterventions(level);
+                interventionsSection.classList.remove('hidden');
+            } else {
+                interventionsSection.classList.add('hidden');
+            }
+        }
+
+        // ==================== INTERVENTIONS ====================
+        function updateInterventions(level) {
+            const list = document.getElementById('interventions-list');
+            if (!list) return;
+            list.innerHTML = '';
+            
+            const interventions = [];
+            
+            if (level >= 95) {
+                interventions.push({
+                    icon: '🚨',
+                    text: 'EMERGENCY: Stop all activity immediately and move to safe space'
+                });
+            }
+            
+            if (level >= 80) {
+                // Check which channels are highest
+                const sorted = Object.entries(state.channels)
+                    .filter(([name]) => name !== 'bass')
+                    .sort((a, b) => b[1].level - a[1].level);
+                
+                if (sorted[0] && sorted[0][1].level > 70) {
+                    const channelName = sorted[0][0].toUpperCase();
+                    const channelAdvice = {
+                        VOCALS: 'Use emotion regulation: deep breathing, grounding',
+                        GUITAR: 'Reduce social interaction: take a break from people',
+                        KEYS: 'Reduce cognitive load: stop multitasking, rest brain',
+                        DRUMS: 'Reduce sensory input: quiet, dark, calm space'
+                    };
+                    interventions.push({
+                        icon: '⚠️',
+                        text: channelAdvice[channelName] || `Reduce ${channelName} load`
+                    });
+                }
+                
+                if (state.channels.bass.level < 30) {
+                    interventions.push({
+                        icon: '🔋',
+                        text: 'BASS critically low: Eat, drink water, and rest immediately'
+                    });
+                }
+            }
+            
+            if (level >= 60) {
+                if (state.channels.drums.level > 60) {
+                    interventions.push({
+                        icon: '🎧',
+                        text: 'Sensory overload: Use earplugs, sunglasses, or move to quieter space'
+                    });
+                }
+                
+                if (state.channels.guitar.level > 60) {
+                    interventions.push({
+                        icon: '🚪',
+                        text: 'Social overload: Take a break from interaction'
+                    });
+                }
+                
+                if (state.channels.keys.level > 70 || state.channels.keys.level < 10) {
+                    interventions.push({
+                        icon: '🧩',
+                        text: 'Executive function: Use body doubling, task breakdown, or timers'
+                    });
+                }
+            }
+            
+            interventions.forEach(intervention => {
+                const item = document.createElement('div');
+                item.className = 'intervention-item';
+                item.innerHTML = `
+                    <span class="intervention-icon">${intervention.icon}</span>
+                    <span class="intervention-text">${intervention.text}</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // ==================== METERS ====================
+        function setupMeters() {
+            const channels = ['vocals', 'guitar', 'keys', 'drums', 'bass'];
+            channels.forEach(channel => {
+                const meter = document.getElementById(`${channel}-meter`);
+                if (!meter) return;
+                for (let i = 0; i < 20; i++) {
+                    const bar = document.createElement('div');
+                    bar.className = 'meter-bar';
+                    meter.appendChild(bar);
+                }
+            });
+        }
+
+        function updateMeter(channel) {
+            const level = state.channels[channel].level;
+            const meter = document.getElementById(`${channel}-meter`);
+            if (!meter) return;
+            
+            const bars = meter.querySelectorAll('.meter-bar');
+            const activeBars = Math.floor((level / 100) * bars.length);
+            
+            bars.forEach((bar, index) => {
+                bar.classList.remove('active', 'caution', 'warning', 'danger');
+                
+                if (index < activeBars) {
+                    // For bass, invert the colors (low = danger)
+                    if (channel === 'bass') {
+                        if (level < 20) {
+                            bar.classList.add('danger');
+                        } else if (level < 40) {
+                            bar.classList.add('warning');
+                        } else if (level < 60) {
+                            bar.classList.add('caution');
+                        } else {
+                            bar.classList.add('active');
+                        }
+                    } else {
+                        // For other channels, high = danger
+                        if (level < 60) {
+                            bar.classList.add('active');
+                        } else if (level < 80) {
+                            bar.classList.add('caution');
+                        } else if (level < 95) {
+                            bar.classList.add('warning');
+                        } else {
+                            bar.classList.add('danger');
+                        }
+                    }
+                }
+            });
+        }
+
+        // ==================== TABS ====================
+        function switchTab(tabName) {
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            const targetTab = document.getElementById(`tab-${tabName}`);
+            if (targetTab) targetTab.classList.add('active');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const targetNav = document.querySelector(`[data-tab="${tabName}"]`);
+            if (targetNav) targetNav.classList.add('active');
+        }
+
+        // ==================== HISTORY ====================
+        function getLevelClass(level, isBass = false) {
+            if (isBass) {
+                if (level < 20) return 'danger';
+                if (level < 40) return 'warning';
+                if (level < 60) return 'caution';
+                return '';
+            }
+            if (level >= 95) return 'danger';
+            if (level >= 80) return 'warning';
+            if (level >= 60) return 'caution';
+            return '';
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('history-list');
+            const empty = document.getElementById('history-empty');
+            
+            if (!list || !empty) return;
+            
+            if (state.history.length === 0) {
+                list.classList.add('hidden');
+                empty.classList.remove('hidden');
+                return;
+            }
+            
+            list.classList.remove('hidden');
+            empty.classList.add('hidden');
+            list.innerHTML = '';
+            
+            state.history.slice(0, 10).forEach(snapshot => {
+                const date = new Date(snapshot.timestamp);
+                const item = document.createElement('li');
+                item.className = 'history-item';
+                
+                const highestChannel = Object.entries(snapshot.channels)
+                    .filter(([name]) => name !== 'bass')
+                    .sort((a, b) => b[1].level - a[1].level)[0];
+                
+                const masterClass = getLevelClass(snapshot.masterLevel);
+                const bassClass = getLevelClass(snapshot.channels.bass.level, true);
+                
+                item.innerHTML = `
+                    <div class="history-date">${date.toLocaleString()}</div>
+                    <div class="history-stats">
+                        <div class="history-stat">
+                            <div class="history-stat-value ${masterClass}">${snapshot.masterLevel}%</div>
+                            <div class="history-stat-label">Master</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-value ${bassClass}">${snapshot.channels.bass.level}%</div>
+                            <div class="history-stat-label">Energy</div>
+                        </div>
+                        <div class="history-stat">
+                            <div class="history-stat-value">${highestChannel ? highestChannel[0] : 'N/A'}</div>
+                            <div class="history-stat-label">Peak Load</div>
+                        </div>
+                    </div>
+                    ${snapshot.trigger ? `<div class="history-trigger">Trigger: ${snapshot.trigger}</div>` : ''}
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // ==================== SETTINGS ====================
+        function toggleSetting(setting, element) {
+            state.settings[setting] = !state.settings[setting];
+            element.classList.toggle('active');
+            
+            // If manual mode toggled, update master
+            if (setting === 'manual') {
+                updateMasterLevel();
+            }
+            
+            saveState();
+        }
+
+        function exportData() {
+            try {
+                const dataStr = JSON.stringify(state, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `nervous-system-mixer-${Date.now()}.json`;
+                link.click();
+                URL.revokeObjectURL(url);
+                triggerHaptic();
+            } catch (e) {
+                console.error('Export failed:', e);
+                alert('Export failed. Please try again.');
+            }
+        }
+
+        function resetData() {
+            if (confirm('Are you sure you want to clear all data? This cannot be undone.')) {
+                try {
+                    localStorage.removeItem('nervous-system-mixer');
+                    localStorage.removeItem('emergency-history');
+                    location.reload();
+                } catch (e) {
+                    console.error('Reset failed:', e);
+                }
+            }
+        }
+
+        // ==================== HAPTIC FEEDBACK ====================
+        function triggerHaptic(type = 'light') {
+            if (!state.settings.haptics) return;
+            if (!navigator.vibrate) return;
+            
+            const patterns = {
+                light: 10,
+                medium: 20,
+                heavy: [10, 50, 10]
+            };
+            
+            navigator.vibrate(patterns[type]);
+        }
+
+        // ==================== UI UPDATES ====================
+        function updateUI() {
+            // Update all faders and values
+            Object.keys(state.channels).forEach(channel => {
+                const fader = document.getElementById(`${channel}-fader`);
+                const value = document.getElementById(`${channel}-value`);
+                
+                if (fader) {
+                    fader.value = state.channels[channel].level;
+                    fader.setAttribute('aria-valuetext', `${state.channels[channel].level} percent`);
+                }
+                if (value) value.textContent = `${state.channels[channel].level}%`;
+                
+                updateMeter(channel);
+                
+                // Update button states
+                const muteBtn = document.querySelector(`[data-channel="${channel}"][data-action="mute"]`);
+                const soloBtn = document.querySelector(`[data-channel="${channel}"][data-action="solo"]`);
+                
+                if (muteBtn && state.channels[channel].muted) {
+                    muteBtn.classList.add('active');
+                }
+                if (soloBtn && state.channels[channel].solo) {
+                    soloBtn.classList.add('active');
+                }
+            });
+            
+            // Update settings toggles
+            Object.keys(state.settings).forEach(setting => {
+                const toggle = document.getElementById(`toggle-${setting}`);
+                if (toggle) {
+                    if (state.settings[setting]) {
+                        toggle.classList.add('active');
+                    } else {
+                        toggle.classList.remove('active');
+                    }
+                }
+            });
+        }
+
+        // ==================== SERVICE WORKER REGISTRATION ====================
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registered'))
+                    .catch(err => console.log('Service Worker registration failed:', err));
+            });
+        }
+
+        // ==================== START APPLICATION ====================
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
